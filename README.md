@@ -1,292 +1,655 @@
 # ZeroDay Arena
 
-**Enter the arena. Break the logic. Capture the flag.**
+**ZeroDay Arena** is a custom cyberpunk CTF platform built for small **Team vs Team Jeopardy-style CTF battles**.
 
-A full-stack Team vs Team Jeopardy CTF platform built with Next.js, TypeScript, Tailwind CSS, and Supabase. Designed for friendly 2-team CTF battles with a cyberpunk hacker aesthetic.
+It is designed as a lightweight, cinematic alternative to a full CTFd setup for friendly training matches, private duels, school teams, and small cyber competitions.
 
-![ZeroDay Arena](https://img.shields.io/badge/style-cyberpunk-39ff8a)
-![Next.js](https://img.shields.io/badge/Next.js-15-black)
-![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ecf8e)
+> Enter the arena. Break the logic. Capture the flag.
+
+Live demo:
+https://zero-day-ctf-platform.vercel.app/
+
+Repository:
+https://github.com/BeBecpp/ZeroDay_CtfPlatform
+
+---
+
+## Overview
+
+ZeroDay Arena is not just a scoreboard. It is a full hacker-themed CTF battle platform with:
+
+* Team login
+* Challenge dashboard
+* Flag submission
+* Live scoreboard
+* Solve feed
+* Event timer
+* Admin panel
+* Challenge CRUD
+* Team management
+* Submission tracking
+* Scoreboard freeze
+* Supabase database
+* Supabase Storage file uploads
+* Private challenge artifacts
+* Secure server-side flag checking
+* Matrix rain background
+* Cyberpunk / terminal / pixel UI
+
+It was built for a 2-team friendly CTF battle, but it can be extended for larger events.
+
+---
+
+## Why ZeroDay Arena?
+
+Traditional CTF platforms are powerful, but sometimes too heavy for small team battles.
+
+ZeroDay Arena focuses on:
+
+* Fast setup
+* Small-team competitions
+* Custom visual identity
+* Admin-friendly challenge management
+* Secure flag checking
+* Private file delivery
+* A more cinematic hacker-arena experience
+
+It is inspired by the workflow of platforms like CTFd, but the UI and event flow are custom-built for a more immersive Team vs Team experience.
+
+---
 
 ## Features
 
-- **Team login** with cookie-based JWT sessions
-- **Challenge dashboard** with category filters and mission cards
-- **Flag submission** with server-side SHA-256 + pepper hashing
-- **Live scoreboard** with battle control room UI
-- **Solve feed** with freeze option for end-of-event
-- **Admin panel** for challenges, teams, submissions, and event settings
-- **Cyberpunk UI** — Matrix rain, glitch effects, neon glow, terminal boot sequence
-- **Vercel-ready** deployment
+### Player Features
+
+* Team login with code and password
+* Challenge grid
+* Category filters
+* Challenge detail pages
+* Flag submission
+* Solved challenge state
+* Scoreboard
+* Solve feed
+* Event countdown
+* Secure challenge file downloads
+
+### Admin Features
+
+* Admin login
+* Dashboard overview
+* Create, edit, delete challenges
+* Toggle challenge visibility
+* Upload challenge files
+* Manage teams
+* View submissions
+* Configure event settings
+* Freeze or unfreeze scoreboard
+
+### Security Features
+
+* Server-side flag checking
+* Flags are stored as hashes
+* Plaintext flags are never exposed to the frontend
+* Passwords are hashed
+* Supabase service role key is server-only
+* Private Supabase Storage bucket for challenge files
+* Signed download URLs for artifacts
+* Hidden challenge files cannot be downloaded by normal teams
+* Duplicate solves do not duplicate points
+
+---
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | Next.js 15 (App Router) |
-| Language | TypeScript |
-| Styling | Tailwind CSS |
-| Database | Supabase (PostgreSQL) |
-| Auth | Custom JWT cookies (no Supabase Auth) |
-| Validation | Zod |
+* **Next.js App Router**
+* **TypeScript**
+* **Tailwind CSS**
+* **Supabase Database**
+* **Supabase Storage**
+* **Vercel Deployment**
+* **Cookie-based auth**
+* **bcrypt password hashing**
+* **SHA-256 flag hashing with pepper**
+* **Cyberpunk UI components**
+* **Canvas Matrix rain animation**
 
-## Quick Start
+---
 
-### 1. Clone and install
+## Project Structure
+
+```txt
+ZeroDay_CtfPlatform/
+├── src/
+│   ├── app/
+│   │   ├── page.tsx
+│   │   ├── login/
+│   │   ├── arena/
+│   │   ├── challenge/[slug]/
+│   │   ├── scoreboard/
+│   │   ├── admin/
+│   │   └── api/
+│   ├── components/
+│   └── lib/
+├── supabase/
+│   └── schema.sql
+├── scripts/
+│   └── seed.ts
+├── docs/
+│   ├── PRODUCTION_CHECKLIST.md
+│   └── SMOKE_TEST.md
+├── public/
+├── README.md
+└── package.json
+```
+
+---
+
+## Database Design
+
+ZeroDay Arena uses Supabase PostgreSQL.
+
+Main tables:
+
+### `teams`
+
+Stores team accounts.
+
+```sql
+id uuid primary key
+name text
+code text unique
+password_hash text
+created_at timestamptz
+```
+
+### `challenges`
+
+Stores CTF challenges.
+
+```sql
+id uuid primary key
+slug text unique
+title text
+category text
+points integer
+difficulty text
+description text
+url text
+file_url text
+file_path text
+flag_hash text
+visible boolean
+sort_order integer
+created_at timestamptz
+updated_at timestamptz
+```
+
+Field meaning:
+
+* `url` — external challenge URL, for example a Railway-hosted web challenge
+* `file_url` — external public file URL
+* `file_path` — private Supabase Storage artifact path
+* `flag_hash` — hashed flag, never sent to frontend
+
+### `submissions`
+
+Stores all submitted flags.
+
+```sql
+id uuid primary key
+team_id uuid
+challenge_id uuid
+submitted_flag text
+correct boolean
+created_at timestamptz
+```
+
+### `solves`
+
+Stores accepted solves.
+
+```sql
+id uuid primary key
+team_id uuid
+challenge_id uuid
+points integer
+solved_at timestamptz
+unique (team_id, challenge_id)
+```
+
+The unique constraint prevents duplicate points for the same challenge.
+
+### `event_settings`
+
+Stores event configuration.
+
+```sql
+id integer primary key
+event_name text
+start_time timestamptz
+end_time timestamptz
+scoreboard_frozen boolean
+```
+
+---
+
+## Supabase Schema
+
+Run the SQL schema in:
+
+```txt
+Supabase Dashboard → SQL Editor → New Query
+```
+
+Main schema file:
+
+```txt
+supabase/schema.sql
+```
+
+The schema creates:
+
+* Teams table
+* Challenges table
+* Submissions table
+* Solves table
+* Event settings table
+* Required indexes
+* Updated timestamp trigger
+* `challenge-files` private storage bucket
+
+---
+
+## Supabase Storage Setup
+
+ZeroDay Arena supports admin challenge file uploads using Supabase Storage.
+
+Create a private bucket:
+
+```txt
+Supabase Dashboard → Storage → New bucket
+```
+
+Bucket settings:
+
+```txt
+Name: challenge-files
+Public: OFF
+```
+
+Do not make this bucket public.
+
+Uploaded files are stored like:
+
+```txt
+challenges/<challenge-slug>/<timestamp>-<safe-filename>
+```
+
+Teams download files through a secure API route:
+
+```txt
+/api/files/...
+```
+
+The app generates short-lived signed URLs server-side.
+
+---
+
+## Environment Variables
+
+Create `.env.local`:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+
+ADMIN_PASSWORD=
+SESSION_SECRET=
+FLAG_PEPPER=
+```
+
+### Example
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_publishable_or_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_secret_key
+
+ADMIN_PASSWORD=change-this-admin-password
+SESSION_SECRET=change-this-long-random-secret
+FLAG_PEPPER=change-this-flag-pepper
+```
+
+Generate secrets:
 
 ```bash
-git clone <your-repo-url>
-cd zeroday-arena
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+Run it twice:
+
+* one value for `SESSION_SECRET`
+* one value for `FLAG_PEPPER`
+
+Important:
+
+* Never commit `.env.local`
+* Never expose `SUPABASE_SERVICE_ROLE_KEY`
+* Never change `FLAG_PEPPER` after seeding flags unless you re-hash all flags
+
+---
+
+## Local Setup
+
+Install dependencies:
+
+```bash
 npm install
 ```
 
-### 2. Set up Supabase
-
-1. Create a free project at [supabase.com](https://supabase.com)
-2. Go to **SQL Editor** and run the contents of `supabase/schema.sql`
-3. Copy your project URL and keys from **Settings → API**
-
-### 3. Configure environment
+Create `.env.local`:
 
 ```bash
 cp .env.example .env.local
 ```
 
-Fill in `.env.local`:
+Apply Supabase schema:
 
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-ADMIN_PASSWORD=your-secure-admin-password
-SESSION_SECRET=your-long-random-secret-at-least-32-chars
-FLAG_PEPPER=your-random-flag-pepper-string
+```txt
+Supabase Dashboard → SQL Editor → paste supabase/schema.sql → Run
 ```
 
-> **Important:** Never commit `.env.local`. Never expose `SUPABASE_SERVICE_ROLE_KEY` or `FLAG_PEPPER` to the client.
-
-### 4. Seed the database
+Seed sample data:
 
 ```bash
 npm run seed
 ```
 
-This creates two teams and eight sample challenges with properly hashed passwords and flags.
-
-**Default team credentials:**
-
-| Team | Code | Password |
-|------|------|----------|
-| NOtFound_404 | `NF404` | `nf404pass` |
-| Opponent Team | `OPPONENT` | `opponentpass` |
-
-### 5. Run locally
+Run development server:
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
+Open:
 
-## Supabase Storage Setup
-
-Challenge artifacts (`.zip`, `.exe`, etc.) are stored in **Supabase Storage**, not on the Vercel filesystem. Vercel serverless functions have no persistent disk — uploads must go directly to Supabase.
-
-### Create the bucket
-
-1. Open your [Supabase Dashboard](https://supabase.com/dashboard)
-2. Go to **Storage**
-3. Click **New bucket**
-4. Name: `challenge-files`
-5. Set **Public bucket** to **OFF** (private)
-6. Create the bucket
-
-### Upload flow (admin)
-
-1. Login at `/admin`
-2. Create or edit a challenge (save first to get a challenge ID)
-3. Use **Uploaded File** section in the challenge form
-4. Select file → **UPLOAD FILE**
-5. File uploads directly to Supabase Storage via signed URL
-6. Path is saved in `challenges.file_path`
-
-### Download flow (teams)
-
-1. Team opens a challenge with an attached file
-2. Clicks **DOWNLOAD ARTIFACT**
-3. Request goes to `/api/files/...` (team auth required)
-4. Server verifies challenge is visible and event has started
-5. Server returns a short-lived signed URL (5 minutes)
-6. File downloads from private Supabase Storage
-
-### `file_url` vs `file_path`
-
-| Field | Purpose |
-|-------|---------|
-| `file_url` | External/public link (e.g. hosted elsewhere) |
-| `file_path` | Private Supabase Storage path (e.g. `challenges/xor-market/1234-xor.zip`) |
-
-Teams never see raw storage paths or permanent public URLs for uploaded files.
-
-### Production notes
-
-- Keep the `challenge-files` bucket **private**
-- Never expose `SUPABASE_SERVICE_ROLE_KEY` to the browser
-- Do not upload real secrets unrelated to the challenge artifact
-- Vercel does not write uploaded files to disk at runtime
-
-## Pages
-
-| Route | Description |
-|-------|-------------|
-| `/` | Landing page with Matrix rain and boot animation |
-| `/login` | Team authentication |
-| `/arena` | Challenge dashboard (requires login) |
-| `/challenge/[slug]` | Challenge detail and flag submission |
-| `/scoreboard` | Public live scoreboard |
-| `/admin` | Admin control panel |
-
-## Admin Panel
-
-1. Go to `/admin`
-2. Login with your `ADMIN_PASSWORD`
-3. Manage challenges, teams, view submissions, configure event settings
-
-### Creating Challenges
-
-- Flags are hashed server-side with SHA-256 + `FLAG_PEPPER`
-- Only `flag_hash` is stored — never plaintext flags
-- Set `visible` to false to hide challenges from teams
-
-### Creating Teams
-
-- Passwords are hashed with bcrypt (12 rounds)
-- Team code must be uppercase alphanumeric (e.g. `NF404`)
-
-### Event Settings
-
-- Set `start_time` and `end_time` for countdown timer
-- Enable **Freeze Scoreboard** to hide solve feed details at end of event
-
-## API Routes
-
-### Public / Team
-
-| Method | Route | Auth | Description |
-|--------|-------|------|-------------|
-| POST | `/api/login` | — | Team login |
-| POST | `/api/logout` | — | Team logout |
-| GET | `/api/me` | Team | Current session |
-| GET | `/api/challenges` | Team | List visible challenges |
-| GET | `/api/challenges/[slug]` | Team | Challenge detail |
-| POST | `/api/submit` | Team | Submit flag |
-| GET | `/api/scoreboard` | — | Public scoreboard |
-
-### Admin
-
-| Method | Route | Description |
-|--------|-------|-------------|
-| POST | `/api/admin/login` | Admin login |
-| GET | `/api/admin/overview` | Dashboard stats |
-| CRUD | `/api/admin/challenges` | Manage challenges |
-| CRUD | `/api/admin/teams` | Manage teams |
-| GET | `/api/admin/submissions` | View all submissions |
-| GET/PUT | `/api/admin/settings` | Event configuration |
-
-## Deploy to Vercel
-
-This project uses **Next.js serverless API routes** — do **not** enable static export. The included `vercel.json` uses Next.js deployment defaults.
-
-### Steps
-
-1. Push your repo to GitHub
-2. Import the project in [Vercel](https://vercel.com)
-3. Vercel auto-detects Next.js via `vercel.json`
-4. Add all production environment variables (checklist below)
-5. Deploy
-
-```bash
-npm run build   # verify locally first
-npm run lint
+```txt
+http://localhost:3000
 ```
 
-### Production Environment Variable Checklist
+---
 
-| Variable | Required | Notes |
-|----------|----------|-------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Public anon key (not used for sensitive queries) |
-| `SUPABASE_SERVICE_ROLE_KEY` | Yes | **Server-only** — API routes only |
-| `ADMIN_PASSWORD` | Yes | Change from default before go-live |
-| `SESSION_SECRET` | Yes | Long random string (32+ characters) |
-| `FLAG_PEPPER` | Yes | Unique random string for flag hashing |
+## Default Seed Credentials
 
-> Never commit secrets. Set all variables in Vercel **Project → Settings → Environment Variables** for Production (and Preview if needed).
+Team login:
 
-### Vercel Notes
+```txt
+Code: NF404
+Password: nf404pass
+```
 
-- No filesystem persistence — all data lives in Supabase
-- No file uploads to disk — use external URLs for challenge files
-- API routes run on Vercel serverless runtime (Node.js)
-- In-memory rate limiting resets on cold starts (acceptable for a 2-team event)
+Second team:
 
-See also: [docs/PRODUCTION_CHECKLIST.md](docs/PRODUCTION_CHECKLIST.md) and [docs/SMOKE_TEST.md](docs/SMOKE_TEST.md)
+```txt
+Code: OPPONENT
+Password: opponentpass
+```
 
-## Supabase & RLS
+Admin login:
 
-All sensitive database operations go through **server-side API routes** using the `SUPABASE_SERVICE_ROLE_KEY`. The frontend does **not** query `teams`, `challenges`, `submissions`, or `solves` directly with the anon key.
+```txt
+/admin
+Password: value from ADMIN_PASSWORD
+```
 
-Row Level Security (RLS) is not required for this architecture because:
+Sample welcome flag:
 
-- No Supabase Auth is used
-- The anon key is never used for sensitive table access in the browser
-- All flag checking, password verification, and admin actions happen in API routes
+```txt
+NF404{welcome_to_zeroday_arena}
+```
 
-If you enable RLS later, ensure service role bypass remains available for API routes.
+---
+
+## Deployment to Vercel
+
+Push the project to GitHub.
+
+Import into Vercel:
+
+```txt
+Vercel → New Project → Import GitHub Repository
+```
+
+Framework:
+
+```txt
+Next.js
+```
+
+Build command:
+
+```txt
+npm run build
+```
+
+Install command:
+
+```txt
+npm install
+```
+
+Add environment variables in:
+
+```txt
+Vercel Project → Settings → Environment Variables
+```
+
+Required variables:
+
+```txt
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY
+ADMIN_PASSWORD
+SESSION_SECRET
+FLAG_PEPPER
+```
+
+Deploy.
+
+After deployment, test:
+
+```txt
+/
+ /login
+ /arena
+ /scoreboard
+ /admin
+```
+
+---
+
+## Challenge File Upload Flow
+
+Admin can upload files directly from the challenge form.
+
+Flow:
+
+1. Admin opens `/admin`
+2. Creates or edits a challenge
+3. Drags a file into the upload area
+4. Saves the challenge
+5. The file uploads to Supabase Storage
+6. The challenge stores the file path
+7. Players download the file from the challenge page
+
+Supported file types:
+
+```txt
+.zip
+.txt
+.png
+.jpg
+.jpeg
+.gif
+.pdf
+.py
+.js
+.pcap
+.pcapng
+.bin
+.exe
+```
+
+Default max size:
+
+```txt
+25MB
+```
+
+---
+
+## Challenge Categories
+
+Recommended categories:
+
+```txt
+WEB
+CRYPTO
+REV
+TRACE
+SHELL
+CHAOS
+```
+
+Example event pack:
+
+| Challenge           |       Category | Points | Difficulty  |
+| ------------------- | -------------: | -----: | ----------- |
+| Welcome to Arena    |          CHAOS |     50 | Easy        |
+| Broken Transmission | CRYPTO / TRACE |    150 | Medium      |
+| Ghost Pixels        |          TRACE |    250 | Hard        |
+| Cookie Shop 2FA     |            WEB |    200 | Medium      |
+| Password.exe        |            REV |    250 | Medium-Hard |
+| RickShell.web       |          SHELL |    300 | Hard        |
+| No Flag Here        |    CHAOS / WEB |    300 | Hard        |
+| Vault.exe           |       WEB / WS |    450 | Hard+       |
+
+---
 
 ## Security Notes
 
-- **Flags:** Hashed with `SHA-256(trimmedFlag + FLAG_PEPPER)`. Case-sensitive. Never returned in API responses.
-- **Passwords:** Bcrypt hashed. Never returned in API responses.
-- **Sessions:** HTTP-only JWT cookies signed with `SESSION_SECRET`. Secure flag enabled in production.
-- **Service role key:** Used only in server-side API routes and seed script. Never exposed to browser.
-- **Duplicate solves:** Prevented via unique constraint on `(team_id, challenge_id)`.
-- **Hidden challenges:** Not visible in team API. Submissions rejected for invisible challenges.
-- **Validation:** All request bodies validated with Zod schemas.
-- **Middleware:** Protects `/arena`, `/challenge/*`, `/scoreboard` (team session) and `/api/admin/*` (admin session).
-- **Rate limiting:** In-memory limits on login and flag submission endpoints.
-- **Event lock:** Submissions disabled before start and after end; admin always has full access.
+ZeroDay Arena is designed so that flags are not exposed to players through frontend code.
 
-## Project Structure
+Important rules:
 
+* Do not store plaintext flags in frontend files
+* Do not store real flags inside public JSON
+* Do not expose `flag_hash`
+* Do not expose `password_hash`
+* Do not expose `SUPABASE_SERVICE_ROLE_KEY`
+* Use server-side API routes for all sensitive operations
+* Keep Supabase Storage bucket private
+* Use signed URLs for downloads
+* Use admin panel or seed script to create challenges
+
+Recommended Supabase security posture:
+
+* Keep direct browser access limited
+* Sensitive reads and writes should go through Next.js API routes
+* Use the service role key only on the server
+* Do not query secret fields directly from frontend clients
+
+---
+
+## Smoke Test
+
+After setup or deploy, run this test:
+
+1. Open `/`
+2. Click `ENTER ARENA`
+3. Login with:
+
+```txt
+Code: NF404
+Password: nf404pass
 ```
-zeroday-arena/
-├── src/
-│   ├── app/              # Pages and API routes
-│   ├── components/       # UI components
-│   └── lib/              # Auth, hash, Supabase, validators
-├── supabase/
-│   ├── schema.sql        # Database schema
-│   └── seed.sql          # Reference (use npm run seed)
-├── scripts/
-│   └── seed.ts           # Seed script with hashing
-├── docs/
-│   ├── PRODUCTION_CHECKLIST.md
-│   └── SMOKE_TEST.md
-├── vercel.json
-└── README.md
+
+4. Open `/arena`
+5. Open `Welcome to Arena`
+6. Submit:
+
+```txt
+NF404{welcome_to_zeroday_arena}
 ```
 
-## Scripts
+7. Confirm success animation
+8. Open `/scoreboard`
+9. Confirm score updated
+10. Open `/admin`
+11. Login with `ADMIN_PASSWORD`
+12. Create a test challenge
+13. Upload a file
+14. Login as team
+15. Download the artifact
+16. Hide the challenge
+17. Confirm the hidden challenge cannot be accessed
+18. Freeze scoreboard
+19. Confirm public scoreboard shows frozen state
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start development server |
-| `npm run build` | Production build |
-| `npm run start` | Start production server |
-| `npm run lint` | Run ESLint |
-| `npm run seed` | Seed database with sample data |
+---
+
+## Production Checklist
+
+Before running a real event:
+
+* [ ] Supabase schema applied
+* [ ] Storage bucket `challenge-files` created
+* [ ] Bucket is private
+* [ ] Seed script ran successfully
+* [ ] Vercel environment variables added
+* [ ] `ADMIN_PASSWORD` changed
+* [ ] `SESSION_SECRET` changed
+* [ ] `FLAG_PEPPER` changed
+* [ ] Team passwords changed
+* [ ] Admin login tested
+* [ ] Team login tested
+* [ ] Flag submission tested
+* [ ] Duplicate solves tested
+* [ ] File upload tested
+* [ ] File download tested
+* [ ] Hidden challenge access blocked
+* [ ] Logged-out file download blocked
+* [ ] Scoreboard freeze tested
+* [ ] `flag_hash` not exposed
+* [ ] `password_hash` not exposed
+* [ ] Service role key not exposed
+
+---
+
+## Current Live Platform
+
+```txt
+https://zero-day-ctf-platform.vercel.app/
+```
+
+---
+
+## Author
+
+Built by **BeBe / NOtFound_404** as a custom CTF platform for friendly team battles, training, and cyber challenge hosting.
+
+GitHub:
+
+```txt
+https://github.com/BeBecpp
+```
+
+---
 
 ## License
 
-MIT — Built for friendly CTF battles. Hack responsibly.
+This project is intended for educational and friendly CTF use.
+
+Use it responsibly.
