@@ -31,11 +31,11 @@ export function ChallengeCard({ challenge, locked = false }: ChallengeCardProps)
 
   const inner = (
     <article
-      className={`
-        pixel-border card-hover bg-arena-panel/80 p-5 h-full flex flex-col gap-3
-        ${solved ? "border-arena-neon/70 bg-arena-neon/5" : ""}
-        ${isLocked && !solved ? "opacity-80" : ""}
-      `}
+        className={`
+          pixel-border card-hover bg-arena-panel/80 p-5 h-full flex flex-col gap-3
+          ${solved ? "border-arena-neon/70 bg-arena-neon/5 breached-card" : ""}
+          ${isLocked && !solved ? "opacity-80" : ""}
+        `}
     >
       <div className="flex items-start justify-between gap-2">
         <h3

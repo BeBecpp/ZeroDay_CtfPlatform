@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { MatrixRain } from "@/components/MatrixRain";
 import { ArenaNav } from "@/components/ArenaNav";
 import { ChallengeCard } from "@/components/ChallengeCard";
 import { CountdownTimer } from "@/components/CountdownTimer";
@@ -95,10 +96,12 @@ export default function ArenaPage() {
   }
 
   return (
-    <main className="min-h-screen">
+    <main className="relative min-h-screen">
+      <MatrixRain density="low" opacity={0.15} speed="slow" />
+      <div className="matrix-overlay opacity-60" aria-hidden="true" />
       <ArenaNav teamName={team?.name} />
 
-      <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 py-6 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-arena-neon font-bold text-lg neon-glow">

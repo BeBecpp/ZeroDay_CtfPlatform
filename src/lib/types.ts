@@ -15,6 +15,7 @@ export type Challenge = {
   description: string;
   url: string | null;
   file_url: string | null;
+  file_path: string | null;
   visible: boolean;
   sort_order: number;
   created_at: string;
@@ -31,6 +32,7 @@ export type ChallengePublic = {
   description: string;
   url: string | null;
   file_url: string | null;
+  downloadUrl?: string;
   visible: boolean;
   solved?: boolean;
   locked?: boolean;

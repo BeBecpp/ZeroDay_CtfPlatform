@@ -306,6 +306,7 @@ export default function AdminPage() {
                     setCreatingChallenge(false);
                     setEditingChallenge(null);
                   }}
+                  onFileChange={() => loadTabData("challenges")}
                 />
               </PixelPanel>
             )}

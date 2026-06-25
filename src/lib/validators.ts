@@ -51,3 +51,19 @@ export const eventSettingsSchema = z.object({
   end_time: z.string().nullable().optional(),
   scoreboard_frozen: z.boolean(),
 });
+
+export const fileUploadUrlSchema = z.object({
+  challengeSlug: z.string().min(1).regex(/^[a-z0-9-]+$/),
+  fileName: z.string().min(1).max(255),
+  contentType: z.string().min(1).max(255),
+  fileSize: z.number().int().positive().max(25 * 1024 * 1024),
+});
+
+export const fileAttachSchema = z.object({
+  challengeId: z.string().uuid(),
+  filePath: z.string().min(1).max(512),
+});
+
+export const fileDeleteSchema = z.object({
+  filePath: z.string().min(1).max(512),
+});

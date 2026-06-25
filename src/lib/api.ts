@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import type { ChallengePublic } from "./types";
+import { buildDownloadApiPath } from "./storage";
 
 export function toPublicChallenge(
   challenge: Record<string, unknown>,
   solved = false,
   locked = false
 ): ChallengePublic & { locked?: boolean } {
-  return {
+  const filePath = challenge.file_path as string | null | undefined;
+  const result: ChallengePublic & { locked?: boolean } = {
     id: challenge.id as string,
     slug: challenge.slug as string,
     title: challenge.title as string,
@@ -20,6 +22,12 @@ export function toPublicChallenge(
     solved,
     locked,
   };
+
+  if (filePath) {
+    result.downloadUrl = buildDownloadApiPath(filePath);
+  }
+
+  return result;
 }
 
 export function toAdminChallenge(challenge: Record<string, unknown>) {

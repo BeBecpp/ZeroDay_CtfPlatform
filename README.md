@@ -88,6 +88,53 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000)
 
+## Supabase Storage Setup
+
+Challenge artifacts (`.zip`, `.exe`, etc.) are stored in **Supabase Storage**, not on the Vercel filesystem. Vercel serverless functions have no persistent disk — uploads must go directly to Supabase.
+
+### Create the bucket
+
+1. Open your [Supabase Dashboard](https://supabase.com/dashboard)
+2. Go to **Storage**
+3. Click **New bucket**
+4. Name: `challenge-files`
+5. Set **Public bucket** to **OFF** (private)
+6. Create the bucket
+
+### Upload flow (admin)
+
+1. Login at `/admin`
+2. Create or edit a challenge (save first to get a challenge ID)
+3. Use **Uploaded File** section in the challenge form
+4. Select file → **UPLOAD FILE**
+5. File uploads directly to Supabase Storage via signed URL
+6. Path is saved in `challenges.file_path`
+
+### Download flow (teams)
+
+1. Team opens a challenge with an attached file
+2. Clicks **DOWNLOAD ARTIFACT**
+3. Request goes to `/api/files/...` (team auth required)
+4. Server verifies challenge is visible and event has started
+5. Server returns a short-lived signed URL (5 minutes)
+6. File downloads from private Supabase Storage
+
+### `file_url` vs `file_path`
+
+| Field | Purpose |
+|-------|---------|
+| `file_url` | External/public link (e.g. hosted elsewhere) |
+| `file_path` | Private Supabase Storage path (e.g. `challenges/xor-market/1234-xor.zip`) |
+
+Teams never see raw storage paths or permanent public URLs for uploaded files.
+
+### Production notes
+
+- Keep the `challenge-files` bucket **private**
+- Never expose `SUPABASE_SERVICE_ROLE_KEY` to the browser
+- Do not upload real secrets unrelated to the challenge artifact
+- Vercel does not write uploaded files to disk at runtime
+
 ## Pages
 
 | Route | Description |

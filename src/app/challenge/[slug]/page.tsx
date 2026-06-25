@@ -90,7 +90,8 @@ export default function ChallengePage() {
   }
 
   const hasUrl = challenge.url && challenge.url.trim().length > 0;
-  const hasFile = challenge.file_url && challenge.file_url.trim().length > 0;
+  const hasExternalFile = challenge.file_url && challenge.file_url.trim().length > 0;
+  const hasArtifact = !!challenge.downloadUrl;
 
   return (
     <main className="min-h-screen">
@@ -135,8 +136,13 @@ export default function ChallengePage() {
             {challenge.description}
           </div>
 
-          {(hasUrl || hasFile) && (
+          {(hasUrl || hasExternalFile || hasArtifact) && (
             <div className="flex flex-wrap gap-3 mt-6">
+              {hasArtifact && (
+                <a href={challenge.downloadUrl}>
+                  <CyberButton size="sm">DOWNLOAD ARTIFACT</CyberButton>
+                </a>
+              )}
               {hasUrl && (
                 <a
                   href={challenge.url!}
@@ -148,7 +154,7 @@ export default function ChallengePage() {
                   </CyberButton>
                 </a>
               )}
-              {hasFile && (
+              {hasExternalFile && (
                 <a
                   href={challenge.file_url!}
                   target="_blank"
@@ -156,7 +162,7 @@ export default function ChallengePage() {
                   download
                 >
                   <CyberButton variant="secondary" size="sm">
-                    Download File
+                    External File
                   </CyberButton>
                 </a>
               )}

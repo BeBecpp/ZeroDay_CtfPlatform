@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS challenges (
   description text NOT NULL,
   url text,
   file_url text,
+  file_path text,
   flag_hash text NOT NULL,
   visible boolean DEFAULT true,
   sort_order integer DEFAULT 0,
@@ -91,6 +92,12 @@ INSERT INTO event_settings (id, event_name)
 VALUES (1, 'ZeroDay Arena: Friendly Duel #01')
 ON CONFLICT (id) DO NOTHING;
 
+CREATE INDEX IF NOT EXISTS idx_challenges_file_path ON challenges(file_path);
+
+-- Migration for existing databases:
+-- ALTER TABLE challenges ADD COLUMN IF NOT EXISTS file_path text;
+
 -- RLS: disabled by default — all sensitive access goes through server-side API routes
 -- using the service role key. Do not query teams/challenges/submissions/solves from the
--- browser with the anon key.
+-- browser with the anon key. Challenge files are stored in private Supabase Storage bucket
+-- `challenge-files` and accessed via signed URLs generated server-side.

@@ -4,17 +4,20 @@ import { useState } from "react";
 import { CATEGORIES } from "@/lib/types";
 import type { Challenge } from "@/lib/types";
 import { CyberButton } from "./CyberButton";
+import { AdminFileUpload } from "./AdminFileUpload";
 
 interface AdminChallengeFormProps {
   challenge?: Challenge;
   onSave: (data: Record<string, unknown>) => Promise<void>;
   onCancel: () => void;
+  onFileChange?: () => void;
 }
 
 export function AdminChallengeForm({
   challenge,
   onSave,
   onCancel,
+  onFileChange,
 }: AdminChallengeFormProps) {
   const [form, setForm] = useState({
     title: challenge?.title || "",
@@ -29,6 +32,9 @@ export function AdminChallengeForm({
     visible: challenge?.visible ?? true,
     sort_order: challenge?.sort_order || 0,
   });
+  const [filePath, setFilePath] = useState<string | null>(
+    challenge?.file_path ?? null
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -86,15 +92,38 @@ export function AdminChallengeForm({
           <label className="text-arena-muted text-xs block mb-1">Sort Order</label>
           <input type="number" className="cyber-input" value={form.sort_order} onChange={(e) => update("sort_order", parseInt(e.target.value))} />
         </div>
-        <div>
-          <label className="text-arena-muted text-xs block mb-1">URL (optional)</label>
-          <input className="cyber-input" value={form.url} onChange={(e) => update("url", e.target.value)} />
+        <div className="md:col-span-2">
+          <label className="text-arena-muted text-xs block mb-1">Challenge URL (optional)</label>
+          <input className="cyber-input" value={form.url} onChange={(e) => update("url", e.target.value)} placeholder="https://..." />
         </div>
-        <div>
-          <label className="text-arena-muted text-xs block mb-1">File URL (optional)</label>
-          <input className="cyber-input" value={form.file_url} onChange={(e) => update("file_url", e.target.value)} />
+        <div className="md:col-span-2">
+          <label className="text-arena-muted text-xs block mb-1">External File URL (optional)</label>
+          <input className="cyber-input" value={form.file_url} onChange={(e) => update("file_url", e.target.value)} placeholder="https://example.com/artifact.zip" />
+          <p className="text-arena-muted text-[10px] mt-1 font-mono">
+            Public external link. For private uploads use Uploaded File below.
+          </p>
         </div>
       </div>
+
+      {challenge?.id ? (
+        <AdminFileUpload
+          challengeId={challenge.id}
+          challengeSlug={form.slug}
+          currentFilePath={filePath}
+          onUploaded={(path) => {
+            setFilePath(path);
+            onFileChange?.();
+          }}
+          onRemoved={() => {
+            setFilePath(null);
+            onFileChange?.();
+          }}
+        />
+      ) : (
+        <p className="text-arena-amber text-xs font-mono border border-arena-amber/30 p-3">
+          Save the challenge first to upload files to Supabase Storage.
+        </p>
+      )}
 
       <div>
         <label className="text-arena-muted text-xs block mb-1">Description</label>
@@ -118,7 +147,7 @@ export function AdminChallengeForm({
         Visible to teams
       </label>
 
-      {error && <p className="text-arena-danger text-sm shake-error">{error}</p>}
+      {error && <p className="text-arena-danger text-sm access-denied-shake">{error}</p>}
 
       <div className="flex gap-3">
         <CyberButton type="submit" disabled={loading}>

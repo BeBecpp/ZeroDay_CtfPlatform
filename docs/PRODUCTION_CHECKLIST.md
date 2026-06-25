@@ -52,6 +52,18 @@ Use this checklist before running a live ZeroDay Arena event.
 - [ ] No sensitive tables queried from frontend with anon key
 - [ ] Rate limiting returns `Too many attempts. Wait a moment.` when triggered
 
+## Supabase Storage
+
+- [ ] Storage bucket `challenge-files` created
+- [ ] Bucket is **private** (not public)
+- [ ] `challenges.file_path` column exists (run updated `schema.sql` or migration)
+- [ ] Admin file upload tested from `/admin`
+- [ ] Team download via **DOWNLOAD ARTIFACT** works
+- [ ] Logged-out user cannot access `/api/files/...`
+- [ ] Hidden challenge file cannot be downloaded by teams
+- [ ] Service role key is not exposed in browser
+- [ ] Vercel runtime does not write files to disk
+
 ## Deployment
 
 - [ ] `npm run build` passes locally

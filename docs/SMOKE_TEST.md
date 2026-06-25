@@ -58,6 +58,16 @@ Follow this flow to verify ZeroDay Arena works end-to-end locally.
 35. Run `npm run build`
 36. Confirm zero TypeScript/build errors
 
+## File Upload (Supabase Storage)
+
+37. Create private bucket `challenge-files` in Supabase Storage
+38. Admin: edit `XOR Market`, upload `xor-market.zip`
+39. Confirm `FILE ATTACHED` success message
+40. Team: open `/challenge/xor-market`
+41. Click **DOWNLOAD ARTIFACT** — file downloads
+42. Logout and open download URL directly — should return 401
+43. Admin: hide challenge — team can no longer see or download file
+
 ## Expected Security
 
 - No `flag_hash` in any API response (check Network tab)
