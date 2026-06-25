@@ -92,10 +92,10 @@ INSERT INTO event_settings (id, event_name)
 VALUES (1, 'ZeroDay Arena: Friendly Duel #01')
 ON CONFLICT (id) DO NOTHING;
 
-CREATE INDEX IF NOT EXISTS idx_challenges_file_path ON challenges(file_path);
+-- Migrations for existing databases (safe to re-run)
+ALTER TABLE challenges ADD COLUMN IF NOT EXISTS file_path text;
 
--- Migration for existing databases:
--- ALTER TABLE challenges ADD COLUMN IF NOT EXISTS file_path text;
+CREATE INDEX IF NOT EXISTS idx_challenges_file_path ON challenges(file_path);
 
 -- RLS: disabled by default — all sensitive access goes through server-side API routes
 -- using the service role key. Do not query teams/challenges/submissions/solves from the

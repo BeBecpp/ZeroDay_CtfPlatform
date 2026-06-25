@@ -352,3 +352,9 @@ body {
   96% { opacity: 0.9; }
   97% { opacity: 1; }
 }
+
+/* Artifact dropzone */
+.artifact-dropzone {
+  border-style: dashed;
+  border-width: 2px;
+}

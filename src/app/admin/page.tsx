@@ -142,7 +142,9 @@ export default function AdminPage() {
     if (authenticated) loadTabData(activeTab);
   }, [authenticated, activeTab, loadTabData]);
 
-  const saveChallenge = async (data: Record<string, unknown>) => {
+  const saveChallenge = async (
+    data: Record<string, unknown>
+  ): Promise<{ challenge: Challenge }> => {
     const url = editingChallenge
       ? `/api/admin/challenges/${editingChallenge.id}`
       : "/api/admin/challenges";
@@ -153,10 +155,10 @@ export default function AdminPage() {
     });
     const result = await res.json();
     if (!res.ok) throw new Error(result.error || "Save failed");
-    setEditingChallenge(null);
-    setCreatingChallenge(false);
-    showToast("Challenge saved", "success");
-    loadTabData("challenges");
+
+    const saved = result.challenge as Challenge;
+    await loadTabData("challenges");
+    return { challenge: saved };
   };
 
   const deleteChallenge = async (id: string) => {
@@ -302,11 +304,15 @@ export default function AdminPage() {
                 <AdminChallengeForm
                   challenge={editingChallenge || undefined}
                   onSave={saveChallenge}
+                  onSuccess={(msg) => showToast(msg, "success")}
+                  onPartialSave={(c) => {
+                    setEditingChallenge(c);
+                    setCreatingChallenge(false);
+                  }}
                   onCancel={() => {
                     setCreatingChallenge(false);
                     setEditingChallenge(null);
                   }}
-                  onFileChange={() => loadTabData("challenges")}
                 />
               </PixelPanel>
             )}

@@ -162,7 +162,7 @@ export default function ChallengePage() {
                   download
                 >
                   <CyberButton variant="secondary" size="sm">
-                    External File
+                    OPEN EXTERNAL ARTIFACT
                   </CyberButton>
                 </a>
               )}

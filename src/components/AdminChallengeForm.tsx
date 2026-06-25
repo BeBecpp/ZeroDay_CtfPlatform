@@ -4,20 +4,30 @@ import { useState } from "react";
 import { CATEGORIES } from "@/lib/types";
 import type { Challenge } from "@/lib/types";
 import { CyberButton } from "./CyberButton";
-import { AdminFileUpload } from "./AdminFileUpload";
+import { AdminFileDropzone } from "./AdminFileDropzone";
+import {
+  removeChallengeFile,
+  uploadChallengeFile,
+} from "@/lib/uploadChallengeFile";
+
+export type ChallengeSaveResult = {
+  challenge: Challenge;
+};
 
 interface AdminChallengeFormProps {
   challenge?: Challenge;
-  onSave: (data: Record<string, unknown>) => Promise<void>;
+  onSave: (data: Record<string, unknown>) => Promise<ChallengeSaveResult>;
   onCancel: () => void;
-  onFileChange?: () => void;
+  onSuccess?: (message: string) => void;
+  onPartialSave?: (challenge: Challenge) => void;
 }
 
 export function AdminChallengeForm({
   challenge,
   onSave,
   onCancel,
-  onFileChange,
+  onSuccess,
+  onPartialSave,
 }: AdminChallengeFormProps) {
   const [form, setForm] = useState({
     title: challenge?.title || "",
@@ -35,26 +45,72 @@ export function AdminChallengeForm({
   const [filePath, setFilePath] = useState<string | null>(
     challenge?.file_path ?? null
   );
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [warning, setWarning] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setSuccess("");
+    setWarning("");
+    setUploadProgress(0);
 
     try {
-      await onSave({
+      const result = await onSave({
         ...form,
         url: form.url || null,
         file_url: form.file_url || null,
         flag: form.flag || undefined,
       });
+
+      const savedChallenge = result.challenge;
+
+      if (selectedFile) {
+        try {
+          const newPath = await uploadChallengeFile({
+            challengeId: savedChallenge.id,
+            challengeSlug: form.slug,
+            file: selectedFile,
+            onProgress: setUploadProgress,
+          });
+          setFilePath(newPath);
+          setSelectedFile(null);
+          setSuccess("FILE ATTACHED");
+          onSuccess?.("Challenge saved and file attached");
+          onCancel();
+        } catch (uploadErr) {
+          onPartialSave?.(savedChallenge);
+          setWarning(
+            "Challenge saved, but file upload failed. You can retry upload from edit."
+          );
+          setError(
+            uploadErr instanceof Error ? uploadErr.message : "Upload failed"
+          );
+          onSuccess?.("Challenge saved (upload failed)");
+        }
+      } else {
+        setSuccess(challenge ? "Challenge updated" : "Challenge created");
+        onSuccess?.(challenge ? "Challenge updated" : "Challenge created");
+        onCancel();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save failed");
     } finally {
       setLoading(false);
+      setTimeout(() => setUploadProgress(0), 1500);
     }
+  };
+
+  const handleRemoveAttached = async () => {
+    if (!filePath) return;
+    await removeChallengeFile(filePath);
+    setFilePath(null);
+    setSuccess("FILE REMOVED");
   };
 
   const update = (key: string, value: string | number | boolean) => {
@@ -100,28 +156,25 @@ export function AdminChallengeForm({
           <label className="text-arena-muted text-xs block mb-1">External File URL (optional)</label>
           <input className="cyber-input" value={form.file_url} onChange={(e) => update("file_url", e.target.value)} placeholder="https://example.com/artifact.zip" />
           <p className="text-arena-muted text-[10px] mt-1 font-mono">
-            Public external link. For private uploads use Uploaded File below.
+            Public external link. Private uploads use the dropzone below.
           </p>
         </div>
       </div>
 
-      {challenge?.id ? (
-        <AdminFileUpload
-          challengeId={challenge.id}
-          challengeSlug={form.slug}
-          currentFilePath={filePath}
-          onUploaded={(path) => {
-            setFilePath(path);
-            onFileChange?.();
-          }}
-          onRemoved={() => {
-            setFilePath(null);
-            onFileChange?.();
-          }}
-        />
-      ) : (
-        <p className="text-arena-amber text-xs font-mono border border-arena-amber/30 p-3">
-          Save the challenge first to upload files to Supabase Storage.
+      <AdminFileDropzone
+        selectedFile={selectedFile}
+        onFileSelect={setSelectedFile}
+        attachedFilePath={filePath}
+        onRemoveAttached={filePath ? handleRemoveAttached : undefined}
+        uploadProgress={uploadProgress}
+        disabled={loading}
+        error={warning ? error : undefined}
+        success={success}
+      />
+
+      {warning && (
+        <p className="text-arena-amber text-xs font-mono border border-arena-amber/40 bg-arena-amber/10 p-2">
+          {warning}
         </p>
       )}
 
@@ -147,13 +200,21 @@ export function AdminChallengeForm({
         Visible to teams
       </label>
 
-      {error && <p className="text-arena-danger text-sm access-denied-shake">{error}</p>}
+      {error && !warning && (
+        <p className="text-arena-danger text-sm access-denied-shake">{error}</p>
+      )}
 
       <div className="flex gap-3">
         <CyberButton type="submit" disabled={loading}>
-          {loading ? "SAVING..." : challenge ? "UPDATE" : "CREATE"}
+          {loading
+            ? uploadProgress > 0
+              ? "UPLOADING..."
+              : "SAVING..."
+            : challenge
+              ? "UPDATE"
+              : "CREATE"}
         </CyberButton>
-        <CyberButton type="button" variant="secondary" onClick={onCancel}>
+        <CyberButton type="button" variant="secondary" onClick={onCancel} disabled={loading}>
           CANCEL
         </CyberButton>
       </div>
